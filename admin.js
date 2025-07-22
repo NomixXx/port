@@ -21,6 +21,9 @@ class AdminSectionManager {
             { id: 2, name: 'Расширенный', description: 'Расширенный уровень доступа' },
             { id: 3, name: 'Полный', description: 'Полный уровень доступа' }
         ];
+        
+        // Убедиться, что уровни доступа сохранены
+        this.saveAccessLevels();
     }
 
     saveSections() {
@@ -84,10 +87,14 @@ class AdminSectionManager {
             username: username,
             password: password,
             role: role,
-            accessLevel: parseInt(accessLevel)
+            accessLevel: parseInt(role === 'admin' ? 10 : accessLevel || 1)
         };
+        console.log('Создан новый пользователь:', newUser);
         this.users.push(newUser);
         this.saveUsers();
+        // Обновить глобальную систему аутентификации
+        auth.users = this.users;
+        auth.saveUsers();
         return newUser;
     }
 
@@ -97,8 +104,17 @@ class AdminSectionManager {
             this.users[userIndex].username = newUsername;
             this.users[userIndex].password = newPassword;
             this.users[userIndex].role = newRole;
-            this.users[userIndex].accessLevel = parseInt(newAccessLevel);
+            this.users[userIndex].accessLevel = parseInt(newRole === 'admin' ? 10 : newAccessLevel);
             this.saveUsers();
+            // Обновить глобальную систему аутентификации
+            auth.users = this.users;
+            auth.saveUsers();
+            
+            // Если редактируем текущего пользователя, обновить его данные
+            if (auth.currentUser && auth.currentUser.username === oldUsername) {
+                auth.currentUser = this.users[userIndex];
+                localStorage.setItem('uptaxi_currentUser', JSON.stringify(auth.currentUser));
+            }
             return true;
         }
         return false;
@@ -107,6 +123,9 @@ class AdminSectionManager {
     deleteUser(username) {
         this.users = this.users.filter(u => u.username !== username);
         this.saveUsers();
+        // Обновить глобальную систему аутентификации
+        auth.users = this.users;
+        auth.saveUsers();
     }
 
     addContent(section, subsection, title, description) {
@@ -164,8 +183,25 @@ class AdminSectionManager {
     }
 
     createAccessLevel(name, description) {
+        // Найти следующий доступный номер от 1 до 10
+        let nextId = 1;
+        const existingIds = this.accessLevels.map(level => parseInt(level.id));
+        
+        for (let i = 1; i <= 10; i++) {
+            if (!existingIds.includes(i)) {
+                nextId = i;
+                break;
+            }
+        }
+        
+        // Проверить, что не превышен лимит в 10 уровней
+        if (nextId > 10) {
+            alert('Максимальное количество уровней доступа: 10');
+            return null;
+        }
+        
         const newLevel = {
-            id: Date.now(),
+            id: nextId,
             name: name,
             description: description
         };
@@ -175,7 +211,7 @@ class AdminSectionManager {
     }
 
     updateAccessLevel(id, name, description) {
-        const levelIndex = this.accessLevels.findIndex(l => l.id == id);
+        const levelIndex = this.accessLevels.findIndex(l => l.id.toString() === id.toString());
         if (levelIndex !== -1) {
             this.accessLevels[levelIndex].name = name;
             this.accessLevels[levelIndex].description = description;
@@ -186,7 +222,7 @@ class AdminSectionManager {
     }
 
     deleteAccessLevel(id) {
-        this.accessLevels = this.accessLevels.filter(l => l.id != id);
+        this.accessLevels = this.accessLevels.filter(l => l.id.toString() !== id.toString());
         this.saveAccessLevels();
     }
 }
@@ -207,6 +243,9 @@ function openModal(modalId) {
         if (modalId === 'addContentModal' || modalId === 'addDocModal') {
             fillSectionSelects(modalId);
         }
+        
+        // Обновить селекты уровней доступа
+        updateAccessLevelSelects();
     }
 }
 
@@ -215,6 +254,35 @@ function closeModal(modalId) {
     if (modal) {
         modal.classList.remove('show');
     }
+}
+
+// Обновление всех селектов уровней доступа
+function updateAccessLevelSelects() {
+    const selects = [
+        'newUserAccess',
+        'editUserAccess', 
+        'sectionAccess',
+        'editSectionAccess'
+    ];
+    
+    selects.forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+            const currentValue = select.value;
+            select.innerHTML = '';
+            
+            // Сортировать уровни по ID для правильного порядка в селектах
+            const sortedLevels = adminManager.accessLevels.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            
+            sortedLevels.forEach(level => {
+                select.innerHTML += `<option value="${level.id}">Уровень ${level.id}: ${level.name}</option>`;
+            });
+            
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+    });
 }
 
 // Заполнение селектов разделов
@@ -229,7 +297,11 @@ function fillSectionSelects(modalId) {
         });
         
         sectionSelect.onchange = function() {
-            const selectedSection = adminManager.sections.find(s => s.id === this.value);
+                    const newLevel = adminManager.createAccessLevel(name, description);
+                    if (!newLevel) {
+                        return; // Если достигнут лимит, не закрывать модальное окно
+                    }
+                    
             subsectionSelect.innerHTML = '<option value="">Выберите подраздел</option>';
             if (selectedSection) {
                 selectedSection.subsections.forEach(subsection => {
@@ -323,11 +395,12 @@ function loadUsers() {
     
     let html = '';
     adminManager.users.forEach(user => {
+        const accessLevelName = getAccessLevelName(user.accessLevel || 1);
         html += `
             <div class="data-card">
                 <h4>${user.username}</h4>
                 <p>Роль: ${user.role === 'admin' ? 'Администратор' : 'Пользователь'}</p>
-                <p>Уровень доступа: ${user.accessLevel || 1}</p>
+                <p>Уровень доступа: ${accessLevelName}</p>
                 <div class="data-card-actions">
                     <button class="btn-edit" onclick="editUser('${user.username}')">Редактировать</button>
                     <button class="btn-danger" onclick="deleteUser('${user.username}')">Удалить</button>
@@ -372,8 +445,8 @@ function loadAccessLevels() {
                 <h4>${level.name}</h4>
                 <p>${level.description}</p>
                 <div class="data-card-actions">
-                    <button class="btn-edit" onclick="editAccessLevel(${level.id})">Редактировать</button>
-                    <button class="btn-danger" onclick="deleteAccessLevel(${level.id})">Удалить</button>
+                    <button class="btn-edit" onclick="editAccessLevel('${level.id}')">Редактировать</button>
+                    <button class="btn-danger" onclick="deleteAccessLevel('${level.id}')">Удалить</button>
                 </div>
             </div>
         `;
@@ -391,7 +464,7 @@ function loadContent() {
         items.forEach(item => {
             html += `
                 <div class="data-card">
-                    <h4>${item.title}</h4>
+                    <h4>Уровень ${level.id}: ${level.name}</h4>
                     <p>${item.description}</p>
                     <p><small>Создано: ${item.createdAt}</small></p>
                     <div class="data-card-actions">
@@ -487,6 +560,50 @@ function loadActivities() {
     grid.innerHTML = html;
 }
 
+// Глобальная переменная для хранения текущего URL документа
+let currentGoogleDocUrl = '';
+
+// Функция открытия Google документа во встроенном просмотрщике
+function openGoogleDocEmbed(url, title) {
+    // Преобразовать URL для встраивания
+    let embedUrl = url;
+    
+    // Если это обычная ссылка на Google Docs, преобразуем её для встраивания
+    if (url.includes('docs.google.com/document/d/')) {
+        const docId = url.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/document/d/${docId[1]}/preview`;
+        }
+    } else if (url.includes('docs.google.com/spreadsheets/d/')) {
+        const docId = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/spreadsheets/d/${docId[1]}/preview`;
+        }
+    } else if (url.includes('docs.google.com/presentation/d/')) {
+        const docId = url.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/presentation/d/${docId[1]}/preview`;
+        }
+    }
+    
+    // Сохранить оригинальный URL для кнопки "Открыть в новой вкладке"
+    currentGoogleDocUrl = url;
+    
+    // Установить заголовок и URL в iframe
+    document.getElementById('googleDocTitle').textContent = title;
+    document.getElementById('googleDocFrame').src = embedUrl;
+    
+    // Показать модальное окно
+    openModal('googleDocModal');
+}
+
+// Функция открытия документа в новой вкладке
+function openGoogleDocInNewTab() {
+    if (currentGoogleDocUrl) {
+        window.open(currentGoogleDocUrl, '_blank');
+    }
+}
+
 // Загрузка подразделов
 function loadSubsections() {
     const grid = document.getElementById('subsections-grid');
@@ -557,8 +674,8 @@ function manageSubsectionContent(sectionId, subsectionId) {
 
 // Вспомогательные функции
 function getAccessLevelName(level) {
-    const accessLevel = adminManager.accessLevels.find(l => l.id == level);
-    return accessLevel ? accessLevel.name : 'Неизвестный';
+    const accessLevel = adminManager.accessLevels.find(l => l.id.toString() === level.toString());
+    return accessLevel ? `Уровень ${accessLevel.id}: ${accessLevel.name}` : 'Неизвестный';
 }
 
 // Функции редактирования
@@ -570,6 +687,7 @@ function editUser(username) {
         document.getElementById('editPassword').value = user.password;
         document.getElementById('editUserRole').value = user.role;
         document.getElementById('editUserAccess').value = user.accessLevel || 1;
+        updateAccessLevelSelects();
         openModal('editUserModal');
     }
 }
@@ -585,6 +703,7 @@ function editSection(sectionId) {
         // Сохранить копию подразделов для редактирования
         editingSubsections = JSON.parse(JSON.stringify(section.subsections));
         loadSubsectionsForEdit(editingSubsections);
+        updateAccessLevelSelects();
         openModal('editSectionModal');
     }
 }
@@ -595,6 +714,15 @@ function loadSubsectionsForEdit(subsections) {
     
     let html = '';
     subsections.forEach((subsection, index) => {
+        // Сортировать уровни по ID для правильного отображения
+        const sortedLevels = adminManager.accessLevels.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        
+        let accessOptions = '';
+        sortedLevels.forEach(level => {
+            const selected = subsection.accessLevel == level.id ? 'selected' : '';
+            accessOptions += `<option value="${level.id}" ${selected}>${level.name}</option>`;
+        });
+        
         html += `
             <div class="subsection-edit-item" style="margin-bottom: 15px; padding: 15px; border: 1px solid #ddd; border-radius: 8px;">
                 <div class="form-group">
@@ -604,9 +732,7 @@ function loadSubsectionsForEdit(subsections) {
                 <div class="form-group">
                     <label>Уровень доступа</label>
                     <select onchange="updateSubsectionAccess(${index}, this.value)">
-                        <option value="1" ${subsection.accessLevel == 1 ? 'selected' : ''}>Базовый</option>
-                        <option value="2" ${subsection.accessLevel == 2 ? 'selected' : ''}>Расширенный</option>
-                        <option value="3" ${subsection.accessLevel == 3 ? 'selected' : ''}>Полный</option>
+                        ${accessOptions}
                     </select>
                 </div>
                 <button type="button" onclick="removeSubsection(${index})" class="btn-danger" style="margin-top: 10px;">Удалить подраздел</button>
@@ -646,12 +772,14 @@ function removeSubsection(index) {
 }
 
 function editAccessLevel(id) {
-    const level = adminManager.accessLevels.find(l => l.id == id);
+    const level = adminManager.accessLevels.find(l => l.id.toString() === id.toString());
     if (level) {
         document.getElementById('editAccessId').value = id;
         document.getElementById('editAccessName').value = level.name;
         document.getElementById('editAccessDescription').value = level.description;
         openModal('editAccessModal');
+    } else {
+        alert('Ошибка: уровень доступа не найден');
     }
 }
 
@@ -672,8 +800,9 @@ function deleteSection(sectionId) {
 
 function deleteAccessLevel(id) {
     if (confirm('Вы уверены, что хотите удалить этот уровень доступа?')) {
-        adminManager.deleteAccessLevel(id);
+        adminManager.deleteAccessLevel(id.toString());
         loadAccessLevels();
+        updateAccessLevelSelects();
     }
 }
 
@@ -734,8 +863,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!checkAdminAuth()) return;
     
     const user = auth.currentUser;
+    
+    // Убедиться, что админ имеет максимальный уровень доступа
+    if (user.role === 'admin' && (!user.accessLevel || user.accessLevel < 10)) {
+        user.accessLevel = 10;
+        localStorage.setItem('uptaxi_currentUser', JSON.stringify(user));
+        // Обновить в списке пользователей
+        const userIndex = auth.users.findIndex(u => u.username === user.username);
+        if (userIndex !== -1) {
+            auth.users[userIndex].accessLevel = 10;
+            auth.saveUsers();
+        }
+    }
+    
     document.getElementById('adminCurrentUser').textContent = user.username;
     document.getElementById('adminUserInitials').textContent = user.username.charAt(0).toUpperCase();
+    
+    // Обновить все селекты уровней доступа при загрузке
+    updateAccessLevelSelects();
     
     // Показать дашборд по умолчанию
     showAdminSection('dashboard');
@@ -789,10 +934,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = document.getElementById('accessName').value;
             const description = document.getElementById('accessDescription').value;
             
-            adminManager.createAccessLevel(name, description);
-            closeModal('createAccessModal');
-            loadAccessLevels();
-            createAccessForm.reset();
+            const newLevel = adminManager.createAccessLevel(name, description);
+            if (newLevel) {
+                closeModal('createAccessModal');
+                loadAccessLevels();
+                updateAccessLevelSelects();
+                createAccessForm.reset();
+                alert(`Создан уровень ${newLevel.id}: ${newLevel.name}`);
+            }
         });
     }
     
@@ -841,9 +990,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const name = document.getElementById('editAccessName').value;
             const description = document.getElementById('editAccessDescription').value;
             
-            adminManager.updateAccessLevel(id, name, description);
+            if (adminManager.updateAccessLevel(id, name, description)) {
+                alert('Уровень доступа успешно обновлен');
+            } else {
+                alert('Ошибка при обновлении уровня доступа');
+            }
             closeModal('editAccessModal');
             loadAccessLevels();
+            updateAccessLevelSelects();
         });
     }
     

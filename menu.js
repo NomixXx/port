@@ -162,10 +162,26 @@ function loadDynamicSections() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const userAccessLevel = user.accessLevel || 1;
     // Перезагрузить разделы из localStorage
     sectionManager.sections = JSON.parse(localStorage.getItem('uptaxi_sections')) || sectionManager.sections;
-    const availableSections = sectionManager.getSectionsForUser(userAccessLevel);
+    
+    console.log('Текущий пользователь:', user);
+    console.log('Доступные разделы:', sectionManager.sections);
+    
+    // Админы видят все разделы, обычные пользователи - только свой уровень
+    let availableSections;
+    if (user.role === 'admin') {
+        availableSections = sectionManager.sections; // Админы видят все
+    } else {
+        const userAccessLevel = user.accessLevel || 1;
+        console.log('Уровень доступа пользователя:', userAccessLevel);
+        availableSections = sectionManager.sections.filter(section => {
+            console.log(`Раздел ${section.name}: уровень ${section.accessLevel}, пользователь: ${userAccessLevel}`);
+            return section.accessLevel === userAccessLevel;
+        });
+    }
+    
+    console.log('Доступные разделы для пользователя:', availableSections);
     
     const dynamicSectionsContainer = document.getElementById('dynamic-sections');
     const quickLinksContainer = document.getElementById('quick-links');
@@ -176,8 +192,14 @@ function loadDynamicSections() {
     let quickLinksHtml = '';
     
     availableSections.forEach(section => {
-        // Фильтровать подразделы по уровню доступа пользователя
-        const availableSubsections = section.subsections.filter(sub => sub.accessLevel <= userAccessLevel);
+        // Фильтровать подразделы по уровню доступа
+        let availableSubsections;
+        if (user.role === 'admin') {
+            availableSubsections = section.subsections; // Админы видят все подразделы
+        } else {
+            const userAccessLevel = user.accessLevel || 1;
+            availableSubsections = section.subsections.filter(sub => sub.accessLevel === userAccessLevel);
+        }
         
         if (availableSubsections.length > 0) {
             sectionsHtml += `
@@ -284,7 +306,6 @@ function switchToContent() {
 function showContent(sectionId, subsectionId) {
     if (event) event.preventDefault();
     
-    // Проверить доступ пользователя к разделу
     const user = auth.currentUser;
     const sectionData = sectionManager.sections.find(s => s.id === sectionId);
     const subsectionData = sectionData?.subsections.find(sub => sub.id === subsectionId);
@@ -294,9 +315,13 @@ function showContent(sectionId, subsectionId) {
         return;
     }
     
-    if (user.accessLevel < subsectionData.accessLevel) {
-        alert('У вас нет доступа к этому разделу');
-        return;
+    // Проверить доступ пользователя к разделу
+    if (user.role !== 'admin') {
+        const userAccessLevel = user.accessLevel || 1;
+        if (userAccessLevel !== subsectionData.accessLevel) {
+            alert('У вас нет доступа к этому разделу');
+            return;
+        }
     }
     
     // Переключиться на контент
@@ -344,7 +369,6 @@ function showContent(sectionId, subsectionId) {
     `;
     
     // Получить контент
-    const key = `${sectionId}_${subsectionId}`;
     const content = contentManager.getContent(sectionId, subsectionId);
     const googleDocs = contentManager.getGoogleDocs(sectionId, subsectionId);
     const files = contentManager.getFiles(sectionId, subsectionId);
@@ -373,7 +397,7 @@ function showContent(sectionId, subsectionId) {
                     <div class="card-content">
                         <p>${item.description}</p>
                         ${auth.isAdmin() || user.role === 'admin' ? `
-                            <button onclick="deleteContentFromMenu('${key}', ${item.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
+                            <button onclick="deleteContentFromMenu('${sectionId}_${subsectionId}', ${item.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
                                 Удалить
                             </button>
                         ` : ''}
@@ -392,7 +416,16 @@ function showContent(sectionId, subsectionId) {
                     </div>
                     <div class="card-content">
                         <p>Google документ</p>
-                        <a href="${doc.url}" target="_blank" class="doc-link">Открыть документ</a>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button onclick="openGoogleDocEmbed('${doc.url}', '${doc.title}')" class="doc-embed-link">
+                                <span class="icon">👁️</span>
+                                Просмотр
+                            </button>
+                            <a href="${doc.url}" target="_blank" class="doc-link">
+                                <span class="icon">🔗</span>
+                                Открыть в Google
+                            </a>
+                        </div>
                         ${auth.isAdmin() || user.role === 'admin' ? `
                             <button onclick="deleteDocFromMenu(${doc.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
                                 Удалить
@@ -407,19 +440,17 @@ function showContent(sectionId, subsectionId) {
         files.forEach(file => {
             if (file.type && file.type.startsWith('image/')) {
                 html += `
-                    <div class="content-card file-card">
-                        <div class="file-preview">
-                            <img src="${file.url}" alt="${file.name}">
+                    <div class="photo-gallery-item" onclick="viewPhoto('${file.url}', '${file.name}')">
+                        <img src="${file.url}" alt="${file.name}">
+                        <div class="photo-info">
+                            <div class="photo-title">${file.name}</div>
+                            <div class="photo-date">${file.createdAt}</div>
                         </div>
-                        <div class="card-content">
-                            <h4>${file.name}</h4>
-                            <small>Добавлено: ${file.createdAt}</small>
-                            ${auth.isAdmin() || user.role === 'admin' ? `
-                                <button onclick="deleteFileFromMenu(${file.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
-                                    Удалить
-                                </button>
-                            ` : ''}
-                        </div>
+                        ${auth.isAdmin() || user.role === 'admin' ? `
+                            <button onclick="event.stopPropagation(); deleteFileFromMenu(${file.id})" class="btn-danger" style="position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px;">
+                                ✕
+                            </button>
+                        ` : ''}
                     </div>
                 `;
             } else {
@@ -442,6 +473,35 @@ function showContent(sectionId, subsectionId) {
                 `;
             }
         });
+        
+        // Если есть изображения, обернуть их в галерею
+        const imageFiles = files.filter(file => file.type && file.type.startsWith('image/'));
+        if (imageFiles.length > 0) {
+            html = html.replace('<div class="content-grid">', '<div class="content-grid">');
+            // Добавить отдельную галерею для фото
+            let photoGalleryHtml = '<div class="photo-gallery">';
+            imageFiles.forEach(file => {
+                photoGalleryHtml += `
+                    <div class="photo-gallery-item" onclick="viewPhoto('${file.url}', '${file.name}')">
+                        <img src="${file.url}" alt="${file.name}">
+                        <div class="photo-info">
+                            <div class="photo-title">${file.name}</div>
+                            <div class="photo-date">${file.createdAt}</div>
+                        </div>
+                        ${auth.isAdmin() || user.role === 'admin' ? `
+                            <button onclick="event.stopPropagation(); deleteFileFromMenu(${file.id})" class="btn-danger" style="position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px;">
+                                ✕
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            photoGalleryHtml += '</div>';
+            
+            // Заменить отображение изображений в основной сетке на галерею
+            html = html.replace(/<div class="photo-gallery-item"[^>]*>.*?<\/div>/gs, '');
+            html += photoGalleryHtml;
+        }
         
         html += '</div>';
     }
@@ -481,6 +541,12 @@ function openUploadFileModal(sectionId, subsectionId) {
     document.getElementById('fileSectionId').value = sectionId;
     document.getElementById('fileSubsectionId').value = subsectionId;
     openModal('uploadFileModal');
+}
+
+function openUploadPhotoModal(sectionId, subsectionId) {
+    document.getElementById('photoSectionId').value = sectionId;
+    document.getElementById('photoSubsectionId').value = subsectionId;
+    openModal('uploadPhotoModal');
 }
 
 // Функции удаления контента из меню
@@ -568,6 +634,155 @@ function uploadFiles() {
     
     // Перезагрузить текущий раздел
     showContent(sectionId, subsectionId);
+}
+
+// Функция загрузки фотографий
+function uploadPhotos() {
+    const photoInput = document.getElementById('photoUpload');
+    const photos = photoInput.files;
+    const sectionId = document.getElementById('photoSectionId').value;
+    const subsectionId = document.getElementById('photoSubsectionId').value;
+    
+    if (photos.length === 0) {
+        alert('Выберите фотографии для загрузки');
+        return;
+    }
+    
+    if (!sectionId || !subsectionId) {
+        alert('Ошибка: не указан раздел или подраздел');
+        return;
+    }
+    
+    Array.from(photos).forEach(photo => {
+        if (photo.type.startsWith('image/')) {
+            const url = URL.createObjectURL(photo);
+            contentManager.addFile(photo.name, url, sectionId, subsectionId, photo.type);
+        }
+    });
+    
+    // Добавить активность
+    contentManager.addActivity(`Загружено фотографий: ${photos.length}`, '📷');
+    
+    closeModal('uploadPhotoModal');
+    photoInput.value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('photoPreviewGrid').innerHTML = '';
+    alert('Фотографии успешно загружены');
+    
+    // Перезагрузить текущий раздел
+    showContent(sectionId, subsectionId);
+}
+
+// Предварительный просмотр фотографий
+function previewPhotos() {
+    const photoInput = document.getElementById('photoUpload');
+    const previewContainer = document.getElementById('photoPreview');
+    const previewGrid = document.getElementById('photoPreviewGrid');
+    
+    if (photoInput.files.length === 0) {
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    previewContainer.style.display = 'block';
+    previewGrid.innerHTML = '';
+    
+    Array.from(photoInput.files).forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'photo-preview-item';
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="${file.name}">
+                    <div class="photo-name">${file.name}</div>
+                    <button class="remove-photo" onclick="removePhotoFromPreview(${index})">✕</button>
+                `;
+                previewGrid.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Удаление фото из предварительного просмотра
+function removePhotoFromPreview(index) {
+    const photoInput = document.getElementById('photoUpload');
+    const dt = new DataTransfer();
+    
+    Array.from(photoInput.files).forEach((file, i) => {
+        if (i !== index) {
+            dt.items.add(file);
+        }
+    });
+    
+    photoInput.files = dt.files;
+    previewPhotos();
+}
+
+// Просмотр фото в полном размере
+function viewPhoto(url, title) {
+    const modal = document.createElement('div');
+    modal.className = 'photo-modal show';
+    modal.innerHTML = `
+        <div class="photo-modal-content">
+            <button class="photo-modal-close" onclick="this.parentElement.parentElement.remove()">✕</button>
+            <img src="${url}" alt="${title}">
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Закрытие по клику вне изображения
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+// Глобальная переменная для хранения текущего URL документа
+let currentGoogleDocUrl = '';
+
+// Функция открытия Google документа во встроенном просмотрщике
+function openGoogleDocEmbed(url, title) {
+    // Преобразовать URL для встраивания
+    let embedUrl = url;
+    
+    // Если это обычная ссылка на Google Docs, преобразуем её для встраивания
+    if (url.includes('docs.google.com/document/d/')) {
+        const docId = url.match(/\/document\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/document/d/${docId[1]}/preview`;
+        }
+    } else if (url.includes('docs.google.com/spreadsheets/d/')) {
+        const docId = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/spreadsheets/d/${docId[1]}/preview`;
+        }
+    } else if (url.includes('docs.google.com/presentation/d/')) {
+        const docId = url.match(/\/presentation\/d\/([a-zA-Z0-9-_]+)/);
+        if (docId) {
+            embedUrl = `https://docs.google.com/presentation/d/${docId[1]}/preview`;
+        }
+    }
+    
+    // Сохранить оригинальный URL для кнопки "Открыть в новой вкладке"
+    currentGoogleDocUrl = url;
+    
+    // Установить заголовок и URL в iframe
+    document.getElementById('googleDocTitle').textContent = title;
+    document.getElementById('googleDocFrame').src = embedUrl;
+    
+    // Показать модальное окно
+    openModal('googleDocModal');
+}
+
+// Функция открытия документа в новой вкладке
+function openGoogleDocInNewTab() {
+    if (currentGoogleDocUrl) {
+        window.open(currentGoogleDocUrl, '_blank');
+    }
 }
 
 // Настройка обработчиков форм
@@ -691,6 +906,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Настроить обработчики форм
         setupFormHandlers();
+        
+        // Обработчик предварительного просмотра фото
+        const photoInput = document.getElementById('photoUpload');
+        if (photoInput) {
+            photoInput.addEventListener('change', previewPhotos);
+        }
         
         // Слушать обновления разделов
         window.addEventListener('sectionsUpdated', function() {

@@ -16,6 +16,21 @@ class AuthSystem {
     login(username, password) {
         const user = this.users.find(u => u.username === username && u.password === password);
         if (user) {
+            // Убедиться, что у пользователя есть уровень доступа
+            if (!user.accessLevel) {
+                user.accessLevel = user.role === 'admin' ? 10 : 1;
+                console.log('Установлен уровень доступа по умолчанию:', user.accessLevel);
+                this.saveUsers();
+            }
+            
+            // Автоматически устанавливаем максимальный уровень доступа для админов
+            if (user.role === 'admin' && user.accessLevel !== 10) {
+                user.accessLevel = 10;
+                console.log('Установлен максимальный уровень для админа:', user.accessLevel);
+                this.saveUsers();
+            }
+            
+            console.log('Пользователь вошел в систему:', user);
             this.currentUser = user;
             localStorage.setItem('uptaxi_currentUser', JSON.stringify(user));
             return true;
@@ -41,15 +56,22 @@ class AuthSystem {
         if (this.users.find(u => u.username === username)) {
             return false;
         }
-        this.users.push({ username, password, role });
+        // Установить уровень доступа по умолчанию
+        const defaultAccessLevel = role === 'admin' ? 10 : 1;
+        this.users.push({ username, password, role, accessLevel: defaultAccessLevel });
         this.saveUsers();
         return true;
     }
 
-    updateUser(oldUsername, newUsername, newPassword, newRole) {
+    updateUser(oldUsername, newUsername, newPassword, newRole, newAccessLevel) {
         const userIndex = this.users.findIndex(u => u.username === oldUsername);
         if (userIndex !== -1) {
-            this.users[userIndex] = { username: newUsername, password: newPassword, role: newRole };
+            this.users[userIndex] = { 
+                username: newUsername, 
+                password: newPassword, 
+                role: newRole,
+                accessLevel: newAccessLevel || (newRole === 'admin' ? 10 : 1)
+            };
             this.saveUsers();
             return true;
         }

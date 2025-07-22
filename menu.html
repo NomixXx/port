@@ -71,12 +71,6 @@
                 <div class="breadcrumb" id="breadcrumb">
                     <span>Главная</span>
                 </div>
-                <div class="header-actions">
-                    <button class="notification-btn" style="background: none; border: none; color: #FF8F00; font-size: 18px; cursor: pointer; position: relative;">
-                        <span class="icon">🔔</span>
-                        <span class="badge">0</span>
-                    </button>
-                </div>
             </div>
 
             <div class="content-area">
@@ -218,7 +212,56 @@
         </div>
     </div>
 
+    <!-- Загрузка фото -->
+    <div id="uploadPhotoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Загрузка фотографий</h3>
+                <button onclick="closeModal('uploadPhotoModal')" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="photoSectionId">
+                <input type="hidden" id="photoSubsectionId">
+                <div class="upload-area">
+                    <input type="file" id="photoUpload" multiple accept="image/*">
+                    <label for="photoUpload" class="upload-label">
+                        <span class="upload-icon">📷</span>
+                        <span>Выберите фотографии или перетащите сюда</span>
+                        <small>Поддерживаются: JPG, PNG, GIF, WebP</small>
+                    </label>
+                </div>
+                <div id="photoPreview" class="photo-preview-container" style="display: none;">
+                    <h4>Предварительный просмотр:</h4>
+                    <div id="photoPreviewGrid" class="photo-preview-grid"></div>
+                </div>
+                <button onclick="uploadPhotos()" class="btn-primary">Загрузить фотографии</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script src="menu.js"></script>
+
+    <!-- Модальное окно для просмотра Google документов -->
+    <div id="googleDocModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 95vw; height: 95vh;">
+            <div class="modal-header">
+                <h3 id="googleDocTitle">Просмотр документа</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button onclick="openGoogleDocInNewTab()" class="btn-primary" style="padding: 8px 15px; font-size: 14px;">
+                        <span class="icon">🔗</span>
+                        Открыть в новой вкладке
+                    </button>
+                    <button onclick="closeModal('googleDocModal')" class="close-btn">✕</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 0; height: calc(100% - 70px);">
+                <iframe id="googleDocFrame" 
+                        style="width: 100%; height: 100%; border: none;" 
+                        src="">
+                </iframe>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

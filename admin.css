@@ -21,7 +21,7 @@ body {
 /* Боковое меню */
 .admin-sidebar {
     width: 280px;
-    background: linear-gradient(180deg, #FF8F00 0%, #F57C00 50%, #E65100 100%);
+    background: linear-gradient(180deg, #fdba61 0%, #F57C00 50%, #e9844e 100%);
     color: white;
     display: flex;
     flex-direction: column;
@@ -44,22 +44,24 @@ body {
 }
 
 .admin-logo img {
-    width: 45px;
-    height: 45px;
-    filter: brightness(0) invert(1);
+    width: 60px;
+    height: 90px;
+    filter: brightness(1) invert(0);
 }
+
 
 .admin-logo-text h2 {
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 2px;
-    color: #FFF3E0;
+    color: #000000;
+    opacity: 0.7;
 }
 
 .admin-logo-text span {
     font-size: 14px;
     opacity: 0.8;
-    color: #FFCC02;
+    color: #f8c701;
 }
 
 .admin-user-profile {

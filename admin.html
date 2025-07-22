@@ -125,12 +125,6 @@
                 <div class="admin-breadcrumb" id="adminBreadcrumb">
                     <span>Панель управления</span>
                 </div>
-                <div class="admin-header-actions">
-                    <button class="notification-btn">
-                        <span class="icon">🔔</span>
-                        <span class="badge">0</span>
-                    </button>
-                </div>
             </div>
 
             <div class="admin-content-area">
@@ -349,10 +343,11 @@
                     <div class="form-group">
                         <label>Уровень доступа</label>
                         <select id="newUserAccess" required>
-                            <option value="1">Базовый</option>
-                            <option value="2">Расширенный</option>
-                            <option value="3">Полный</option>
+                            <!-- Будет заполнено динамически -->
                         </select>
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Примечание: Администраторы автоматически получают максимальный уровень доступа (10) и видят все разделы
+                        </small>
                     </div>
                     <button type="submit" class="btn-primary">Создать пользователя</button>
                 </form>
@@ -393,9 +388,7 @@
                     <div class="form-group">
                         <label>Уровень доступа</label>
                         <select id="sectionAccess" required>
-                            <option value="1">Базовый</option>
-                            <option value="2">Расширенный</option>
-                            <option value="3">Полный</option>
+                            <!-- Будет заполнено динамически -->
                         </select>
                     </div>
                     <button type="submit" class="btn-primary">Создать раздел</button>
@@ -415,11 +408,17 @@
                 <form id="createAccessForm">
                     <div class="form-group">
                         <label>Название уровня</label>
-                        <input type="text" id="accessName" required>
+                        <input type="text" id="accessName" required placeholder="Например: Базовый, Расширенный, Полный">
                     </div>
                     <div class="form-group">
                         <label>Описание</label>
-                        <textarea id="accessDescription" rows="3" required></textarea>
+                        <textarea id="accessDescription" rows="3" required placeholder="Опишите права и возможности этого уровня доступа"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <small style="color: #666;">
+                            <strong>Примечание:</strong> Уровень будет автоматически пронумерован от 1 до 10. 
+                            Максимальное количество уровней: 10.
+                        </small>
                     </div>
                     <button type="submit" class="btn-primary">Создать уровень</button>
                 </form>
@@ -455,10 +454,11 @@
                     <div class="form-group">
                         <label>Уровень доступа</label>
                         <select id="editUserAccess" required>
-                            <option value="1">Базовый</option>
-                            <option value="2">Расширенный</option>
-                            <option value="3">Полный</option>
+                            <!-- Будет заполнено динамически -->
                         </select>
+                        <small style="color: #666; margin-top: 5px; display: block;">
+                            Примечание: Администраторы автоматически получают максимальный уровень доступа (10) и видят все разделы
+                        </small>
                     </div>
                     <button type="submit" class="btn-primary">Сохранить изменения</button>
                 </form>
@@ -508,9 +508,7 @@
                     <div class="form-group">
                         <label>Уровень доступа</label>
                         <select id="editSectionAccess" required>
-                            <option value="1">Базовый</option>
-                            <option value="2">Расширенный</option>
-                            <option value="3">Полный</option>
+                            <!-- Будет заполнено динамически -->
                         </select>
                     </div>
                     <div class="form-group">
@@ -658,5 +656,27 @@
 
     <script src="admin.js"></script>
     <script src="script.js"></script>
+
+    <!-- Модальное окно для просмотра Google документов -->
+    <div id="googleDocModal" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 95vw; height: 95vh;">
+            <div class="modal-header">
+                <h3 id="googleDocTitle">Просмотр документа</h3>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button onclick="openGoogleDocInNewTab()" class="btn-primary" style="padding: 8px 15px; font-size: 14px;">
+                        <span class="icon">🔗</span>
+                        Открыть в Google
+                    </button>
+                    <button onclick="closeModal('googleDocModal')" class="close-btn">✕</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 0; height: calc(100% - 70px);">
+                <iframe id="googleDocFrame" 
+                        style="width: 100%; height: 100%; border: none;" 
+                        src="">
+                </iframe>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

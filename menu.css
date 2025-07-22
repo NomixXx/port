@@ -21,7 +21,7 @@ body {
 /* Боковое меню */
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, #FF8F00 0%, #F57C00 50%, #E65100 100%);
+    background: linear-gradient(180deg, #fdba61 0%, #F57C00 50%, #e9844e 100%);
     color: white;
     display: flex;
     flex-direction: column;
@@ -44,16 +44,17 @@ body {
 }
 
 .logo img {
-    width: 45px;
-    height: 45px;
-    filter: brightness(0) invert(1);
+    width: 120px;
+    height: 60px;
+    filter: brightness(1) invert(0);
 }
 
 .logo-text h2 {
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 2px;
-    color: #FFF3E0;
+    color: #000000;
+    opacity: 0.7;
 }
 
 .logo-text span {
@@ -770,6 +771,220 @@ body {
     display: none;
 }
 
+/* Загрузка фото */
+.photo-preview-container {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid rgba(255, 202, 40, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 202, 40, 0.05);
+}
+
+.photo-preview-container h4 {
+    color: #E65100;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.photo-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.photo-preview-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.photo-preview-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+}
+
+.photo-preview-item .photo-name {
+    padding: 8px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    background: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.photo-preview-item .remove-photo {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(244, 67, 54, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.photo-preview-item .remove-photo:hover {
+    background: rgba(244, 67, 54, 1);
+    transform: scale(1.1);
+}
+
+/* Галерея фото в контенте */
+.photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.photo-gallery-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 4px 15px rgba(255, 202, 40, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.photo-gallery-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(255, 202, 40, 0.2);
+}
+
+.photo-gallery-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.photo-gallery-item .photo-info {
+    padding: 12px;
+    background: white;
+}
+
+.photo-gallery-item .photo-title {
+    font-weight: 600;
+    color: #E65100;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.photo-gallery-item .photo-date {
+    font-size: 12px;
+    color: #FF8F00;
+}
+
+/* Модальное окно просмотра фото */
+.photo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.photo-modal.show {
+    display: flex;
+}
+
+.photo-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    position: relative;
+}
+
+.photo-modal-content img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.photo-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.photo-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Модальное окно для Google документов */
+.google-doc-modal .modal-content {
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    width: 95vw !important;
+    height: 95vh !important;
+}
+
+.google-doc-modal .modal-header {
+    padding: 15px 20px;
+    flex-shrink: 0;
+}
+
+.google-doc-modal .modal-body {
+    padding: 0 !important;
+    height: calc(100% - 70px) !important;
+    overflow: hidden;
+}
+
+#googleDocFrame {
+    border: none;
+    width: 100%;
+    height: 100%;
+}
+
+.doc-embed-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+}
+
+.doc-embed-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(66, 133, 244, 0.3);
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .app-container {
@@ -866,5 +1081,35 @@ body {
     
     .welcome-header h1 {
         font-size: 28px;
+    }
+    
+    .photo-preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    .photo-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .photo-gallery-item img {
+        height: 150px;
+    }
+    
+    .google-doc-modal .modal-content {
+        width: 98vw !important;
+        height: 90vh !important;
+        max-width: 98vw !important;
+        max-height: 90vh !important;
+    }
+    
+    .google-doc-modal .modal-header {
+        padding: 10px 15px;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .google-doc-modal .modal-body {
+        height: calc(100% - 100px) !important;
     }
 }
