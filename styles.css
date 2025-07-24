@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #FFC107 0%, #FF9800 50%, #F57C00 100%);
+    background: linear-gradient(135deg, #ffe600 0%, #ffaf03 50%, #fdec01 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -25,11 +25,11 @@ body {
 }
 
 .logo {
-    margin-bottom: 30px;
+    margin-bottom: 10px;
 }
 
 .logo img {
-    width: 120px;
+    width: 250px;
     height: auto;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }
@@ -38,8 +38,9 @@ h2 {
     color: #333;
     margin-bottom: 30px;
     font-weight: 300;
-    font-size: 32px;
-    color: #F57C00;
+    font-size: 40px;
+    color: #000000;
+    opacity: 0.9;
 }
 
 .form-group {
@@ -147,5 +148,6 @@ button[type="submit"]:hover {
     
     h2 {
         font-size: 28px;
+        
     }
 }

@@ -26,7 +26,7 @@
                     </div>
                     <div class="admin-user-info">
                         <span class="admin-username" id="adminCurrentUser">Администратор</span>
-                        <span class="admin-user-role">Полный доступ</span>
+                        <span class="admin-user-role"></span>
                     </div>
                 </div>
             </div>
@@ -35,8 +35,8 @@
                 <ul>
                     <li class="admin-nav-item active">
                         <a href="#" onclick="showAdminSection('dashboard')">
-                            <span class="icon">📊</span>
-                            <span>Дашборд</span>
+                            <span class="icon">≡</span>
+                            <b>Меню</b>
                         </a>
                     </li>
                     <li class="admin-nav-item">
@@ -60,7 +60,7 @@
                     <li class="admin-nav-item">
                         <a href="#" onclick="showAdminSection('content')">
                             <span class="icon">📝</span>
-                            <span>Контент</span>
+                            <span>Информация</span>
                         </a>
                     </li>
                     <li class="admin-nav-item">
@@ -81,12 +81,6 @@
                             <span>Последние обновления</span>
                         </a>
                     </li>
-                    <li class="admin-nav-item">
-                        <a href="#" onclick="showAdminSection('subsections')">
-                            <span class="icon">📂</span>
-                            <span>Контент подразделов</span>
-                        </a>
-                    </li>
                     <li class="admin-nav-item" id="back-to-subsections" style="display: none;">
                         <a href="#" onclick="showAdminSection('subsections')">
                             <span class="icon">⬅️</span>
@@ -100,10 +94,10 @@
             <div id="subsection-content" class="admin-content-section" style="display: none;">
                 <div class="admin-content-area">
                     <div class="section-header">
-                        <h2 id="subsection-title">Контент подраздела</h2>
+                        <h2 id="subsection-title">Информация подраздела</h2>
                         <button class="admin-action-btn" onclick="openModal('addContentModal')">
                             <span class="icon">➕</span>
-                            Добавить контент
+                            Добавить информацию
                         </button>
                     </div>
                     <div class="data-grid" id="subsection-content-grid">
@@ -125,12 +119,6 @@
             <div class="admin-content-header">
                 <div class="admin-breadcrumb" id="adminBreadcrumb">
                     <span>Панель управления</span>
-                </div>
-                <div class="admin-header-actions">
-                    <button class="notification-btn">
-                        <span class="icon">🔔</span>
-                        <span class="badge">0</span>
-                    </button>
                 </div>
             </div>
 
@@ -157,10 +145,10 @@
                             </div>
                         </div>
                         <div class="admin-stat-card">
-                            <div class="admin-stat-icon">📝</div>
+                            <div class="admin-stat-icon"></div>
                             <div class="admin-stat-info">
                                 <h3 id="totalContent">0</h3>
-                                <p>Контента</p>
+                                <p></p>
                             </div>
                         </div>
                         <div class="admin-stat-card">
@@ -185,7 +173,7 @@
                             </button>
                             <button class="admin-action-btn" onclick="openModal('addContentModal')">
                                 <span class="icon">📝</span>
-                                Добавить контент
+                                Добавить информацию
                             </button>
                             <button class="admin-action-btn" onclick="openModal('addActivityModal')">
                                 <span class="icon">📢</span>
@@ -247,10 +235,10 @@
                 <!-- Управление контентом -->
                 <div id="content-section" class="admin-section">
                     <div class="section-header">
-                        <h2>Управление контентом</h2>
+                        <h2>Управление информацией</h2>
                         <button class="admin-action-btn" onclick="openModal('addContentModal')">
                             <span class="icon">➕</span>
-                            Добавить контент
+                            Добавить информацию
                         </button>
                     </div>
                     <div class="data-grid" id="content-grid">
@@ -307,7 +295,7 @@
                 <!-- Контент подразделов -->
                 <div id="subsections-section" class="admin-section">
                     <div class="section-header">
-                        <h2>Контент подразделов</h2>
+                        <h2>Информация подразделов</h2>
                         <div class="admin-header-actions">
                             <select id="sectionFilter" onchange="filterSubsectionContent()">
                                 <option value="">Все разделы</option>
@@ -557,11 +545,11 @@
         </div>
     </div>
 
-    <!-- Добавление контента -->
+    <!-- Добавление информации -->
     <div id="addContentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Добавление контента</h3>
+                <h3>Добавление информации</h3>
                 <button onclick="closeModal('addContentModal')" class="close-btn">✕</button>
             </div>
             <div class="modal-body">
@@ -588,7 +576,7 @@
                     </div>
                     <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
                         <button type="button" onclick="closeModal('addContentModal')" class="btn-secondary">Отмена</button>
-                        <button type="submit" class="btn-primary">Добавить контент</button>
+                        <button type="submit" class="btn-primary">Добавить информацию</button>
                     </div>
                 </form>
             </div>
@@ -647,7 +635,7 @@
                         <label>Иконка</label>
                         <select id="activityIcon" required>
                             <option value="📄">📄 Документ</option>
-                            <option value="📝">📝 Контент</option>
+                            <option value="📝">📝 Информация</option>
                             <option value="📊">📊 Таблица</option>
                             <option value="📁">📁 Раздел</option>
                             <option value="👤">👤 Пользователь</option>
@@ -664,11 +652,11 @@
         </div>
     </div>
 
-    <!-- Редактирование контента -->
+    <!-- Редактирование информации -->
     <div id="editContentModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Редактирование контента</h3>
+                <h3>Редактирование информации</h3>
                 <button onclick="closeModal('editContentModal')" class="close-btn">✕</button>
             </div>
             <div class="modal-body">

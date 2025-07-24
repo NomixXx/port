@@ -297,11 +297,9 @@ function fillSectionSelects(modalId) {
         });
         
         sectionSelect.onchange = function() {
-                    const newLevel = adminManager.createAccessLevel(name, description);
-                    if (!newLevel) {
-                        return; // Если достигнут лимит, не закрывать модальное окно
-                    }
-                    
+            const selectedSectionId = this.value;
+            const selectedSection = adminManager.sections.find(s => s.id === selectedSectionId);
+            
             subsectionSelect.innerHTML = '<option value="">Выберите подраздел</option>';
             if (selectedSection) {
                 selectedSection.subsections.forEach(subsection => {
@@ -309,6 +307,9 @@ function fillSectionSelects(modalId) {
                 });
             }
         };
+        
+        // Очистить подразделы при загрузке
+        subsectionSelect.innerHTML = '<option value="">Сначала выберите раздел</option>';
     }
 }
 
@@ -386,6 +387,13 @@ function loadDashboardStats() {
     });
     document.getElementById('totalContent').textContent = totalContent;
     document.getElementById('totalDocs').textContent = adminManager.googleDocs.length;
+    
+    console.log('Статистика дашборда обновлена:', {
+        users: adminManager.users.length,
+        sections: adminManager.sections.length,
+        content: totalContent,
+        docs: adminManager.googleDocs.length
+    });
 }
 
 // Загрузка пользователей
@@ -459,17 +467,30 @@ function loadContent() {
     const grid = document.getElementById('content-grid');
     if (!grid) return;
     
+    console.log('Загрузка контента в админке...');
+    console.log('Доступный контент:', adminManager.content);
+    
     let html = '';
     Object.entries(adminManager.content).forEach(([key, items]) => {
+        console.log(`Обработка ключа: ${key}, элементов: ${items.length}`);
         items.forEach(item => {
             const isLongContent = item.description.length > 200;
             const contentId = `admin-content-${item.id}`;
             const savedWidth = localStorage.getItem(`content-width-${item.id}`) || '';
             const widthStyle = savedWidth ? `style="width: ${savedWidth}px;"` : '';
             
+            // Получить информацию о разделе и подразделе
+            const [sectionId, subsectionId] = key.split('_');
+            const sectionData = adminManager.sections.find(s => s.id === sectionId);
+            const subsectionData = sectionData?.subsections.find(sub => sub.id === subsectionId);
+            
+            const sectionName = sectionData ? sectionData.name : 'Неизвестный раздел';
+            const subsectionName = subsectionData ? subsectionData.name : 'Неизвестный подраздел';
+            
             html += `
                 <div class="data-card admin-resizable" ${widthStyle} data-content-id="${item.id}">
                     <h4>${item.title}</h4>
+                    <p><small><strong>Раздел:</strong> ${sectionName} - ${subsectionName}</small></p>
                     <div class="content-text ${isLongContent ? 'collapsed' : ''}" id="${contentId}">
                         ${item.description.replace(/\n/g, '<br>')}
                     </div>
@@ -489,9 +510,10 @@ function loadContent() {
     });
     
     if (html === '') {
-        html = '<p>Контент не найден</p>';
+        html = '<div class="empty-state"><p>Контент не найден. Добавьте контент через форму выше или в разделах меню.</p></div>';
     }
     
+    console.log('Сгенерированный HTML:', html);
     grid.innerHTML = html;
     
     // Настроить обработчики изменения размера
@@ -980,6 +1002,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Обновить все селекты уровней доступа при загрузке
     updateAccessLevelSelects();
     
+    // Синхронизировать данные с основной системой
+    adminManager.content = JSON.parse(localStorage.getItem('uptaxi_content')) || {};
+    adminManager.googleDocs = JSON.parse(localStorage.getItem('uptaxi_googleDocs')) || [];
+    adminManager.files = JSON.parse(localStorage.getItem('uptaxi_files')) || [];
+    adminManager.activities = JSON.parse(localStorage.getItem('uptaxi_activities')) || [];
+    
+    console.log('Данные синхронизированы:', {
+        content: adminManager.content,
+        docs: adminManager.googleDocs.length,
+        files: adminManager.files.length,
+        activities: adminManager.activities.length
+    });
+    
     // Показать дашборд по умолчанию
     showAdminSection('dashboard');
     
@@ -1129,6 +1164,13 @@ document.addEventListener('DOMContentLoaded', function() {
             loadContent();
             addContentForm.reset();
             
+            // Сбросить селекты
+            document.getElementById('contentSection').innerHTML = '<option value="">Выберите раздел</option>';
+            document.getElementById('contentSubsection').innerHTML = '<option value="">Сначала выберите раздел</option>';
+            
+            // Обновить статистику дашборда
+            loadDashboardStats();
+            
             alert('Контент успешно добавлен!');
         });
     }
@@ -1144,10 +1186,29 @@ document.addEventListener('DOMContentLoaded', function() {
             const sectionId = document.getElementById('docSection').value;
             const subsectionId = document.getElementById('docSubsection').value;
             
+            if (!sectionId || !subsectionId) {
+                alert('Выберите раздел и подраздел');
+                return;
+            }
+            
+            if (!title.trim() || !url.trim()) {
+                alert('Заполните все поля');
+                return;
+            }
+            
             adminManager.addGoogleDoc(title, url, sectionId, subsectionId);
+            adminManager.addActivity(`Добавлен документ: ${title}`, '📄');
+            
             closeModal('addDocModal');
             loadDocs();
+            loadDashboardStats();
             addDocForm.reset();
+            
+            // Сбросить селекты
+            document.getElementById('docSection').innerHTML = '<option value="">Выберите раздел</option>';
+            document.getElementById('docSubsection').innerHTML = '<option value="">Сначала выберите раздел</option>';
+            
+            alert('Документ успешно добавлен!');
         });
     }
     

@@ -4,7 +4,7 @@ class SectionManager {
         this.sections = JSON.parse(localStorage.getItem('uptaxi_sections')) || [
             { 
                 id: 'section1', 
-                name: '213', 
+                name: 'Раздел 1', 
                 icon: '📁',
                 accessLevel: 1,
                 subsections: [
@@ -357,11 +357,10 @@ function showContent(sectionId, subsectionId) {
                 <button onclick="showDashboard()" class="btn-primary">
                     <span class="icon">🏠</span>
                     Главная
-                </button>
                 ${auth.isAdmin() || user.role === 'admin' ? `
                     <button onclick="openAddContentModal('${sectionId}', '${subsectionId}')" class="btn-primary">
                         <span class="icon">📝</span>
-                        Добавить контент
+                        Добавить информацию
                     </button>
                     <button onclick="openAddDocModal('${sectionId}', '${subsectionId}')" class="btn-primary">
                         <span class="icon">📄</span>
@@ -388,7 +387,7 @@ function showContent(sectionId, subsectionId) {
             <div class="empty-state">
                 <div class="empty-icon">📁</div>
                 <h3>Раздел пуст</h3>
-                <p>В этом разделе пока нет контента. Обратитесь к администратору для добавления материалов.</p>
+                <p>В этом разделе пока нет информации. Обратитесь к администратору для добавления материалов.</p>
             </div>
         `;
     } else {
@@ -418,9 +417,14 @@ function showContent(sectionId, subsectionId) {
                             </button>
                         ` : ''}
                         ${auth.isAdmin() || user.role === 'admin' ? `
+                            <div style="display: flex; gap: 100px; margin-top: 10px;">
+                                <button onclick="editContentFromMenu('${sectionId}_${subsectionId}', ${item.id})" class="btn-edit" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
+                                    Редактировать
+                                </button>
                             <button onclick="deleteContentFromMenu('${sectionId}_${subsectionId}', ${item.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
                                 Удалить
                             </button>
+                        </div>
                         ` : ''}
                     </div>
                 </div>
@@ -465,12 +469,8 @@ function showContent(sectionId, subsectionId) {
                         <img src="${file.url}" alt="${file.name}">
                         <div class="photo-info">
                             <div class="photo-title">${file.name}</div>
-                            <div class="photo-date">${file.createdAt}</div>
                         </div>
                         ${auth.isAdmin() || user.role === 'admin' ? `
-                            <button onclick="event.stopPropagation(); deleteFileFromMenu(${file.id})" class="btn-danger" style="position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px;">
-                                ✕
-                            </button>
                         ` : ''}
                     </div>
                 `;
@@ -488,6 +488,7 @@ function showContent(sectionId, subsectionId) {
                                 <button onclick="deleteFileFromMenu(${file.id})" class="btn-danger" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">
                                     Удалить
                                 </button>
+                            </div>
                             ` : ''}
                         </div>
                     </div>
@@ -506,7 +507,6 @@ function showContent(sectionId, subsectionId) {
                     <div class="photo-gallery-item" onclick="viewPhoto('${file.url}', '${file.name}')">
                         <img src="${file.url}" alt="${file.name}">
                         <div class="photo-info">
-                            <div class="photo-title">${file.name}</div>
                             <div class="photo-date">${file.createdAt}</div>
                         </div>
                         ${auth.isAdmin() || user.role === 'admin' ? `
@@ -555,7 +555,7 @@ function setupResizeHandlers() {
                 const width = entry.contentRect.width;
                 if (width > 300) { // Сохранять только если ширина больше минимальной
                     localStorage.setItem(`content-width-${contentId}`, width);
-                    console.log(`Сохранена ширина ${width}px для контента ${contentId}`);
+                    console.log(`Сохранена ширина ${width}px для информации ${contentId}`);
                     
                     // Принудительно обновить layout сетки
                     const grid = card.closest('.content-grid');
@@ -613,11 +613,47 @@ function openUploadPhotoModal(sectionId, subsectionId) {
     openModal('uploadPhotoModal');
 }
 
+// Функция редактирования контента из меню
+function editContentFromMenu(key, id) {
+    if (!auth.isAdmin() && auth.currentUser.role !== 'admin') return;
+    
+    const content = contentManager.content[key];
+    if (!content) return;
+    
+    const item = content.find(c => c.id === id);
+    if (!item) return;
+    
+    // Заполнить форму данными для редактирования
+    document.getElementById('editContentKey').value = key;
+    document.getElementById('editContentId').value = id;
+    document.getElementById('editContentTitle').value = item.title;
+    document.getElementById('editContentDescription').value = item.description;
+    
+    openModal('editContentModal');
+}
+
+// Функция обновления контента
+function updateContentFromMenu(key, id, title, description) {
+    if (!contentManager.content[key]) return false;
+    
+    const itemIndex = contentManager.content[key].findIndex(item => item.id === id);
+    if (itemIndex === -1) return false;
+    
+    contentManager.content[key][itemIndex].title = title;
+    contentManager.content[key][itemIndex].description = description;
+    contentManager.saveContent();
+    
+    // Добавить активность
+    contentManager.addActivity(`Обновлена информация: ${title}`, '✏️');
+    
+    return true;
+}
+
 // Функции удаления контента из меню
 function deleteContentFromMenu(key, id) {
     if (!auth.isAdmin() && auth.currentUser.role !== 'admin') return;
     
-    if (confirm('Вы уверены, что хотите удалить этот контент?')) {
+    if (confirm('Вы уверены, что хотите удалить эту информацию?')) {
         let content = JSON.parse(localStorage.getItem('uptaxi_content')) || {};
         if (content[key]) {
             content[key] = content[key].filter(item => item.id !== id);
@@ -909,6 +945,34 @@ function openGoogleDocInNewTab() {
     }
 }
 
+// Заполнение селектов разделов
+function fillSectionSelects(modalId) {
+    const sectionSelect = document.getElementById(modalId === 'addContentModal' ? 'contentSection' : 'docSection');
+    const subsectionSelect = document.getElementById(modalId === 'addContentModal' ? 'contentSubsection' : 'docSubsection');
+    
+    if (sectionSelect && subsectionSelect) {
+        sectionSelect.innerHTML = '<option value="">Выберите раздел</option>';
+        sectionManager.sections.forEach(section => {
+            sectionSelect.innerHTML += `<option value="${section.id}">${section.name}</option>`;
+        });
+        
+        sectionSelect.onchange = function() {
+            const selectedSectionId = this.value;
+            const selectedSection = sectionManager.sections.find(s => s.id === selectedSectionId);
+            
+            subsectionSelect.innerHTML = '<option value="">Выберите подраздел</option>';
+            if (selectedSection) {
+                selectedSection.subsections.forEach(subsection => {
+                    subsectionSelect.innerHTML += `<option value="${subsection.id}">${subsection.name}</option>`;
+                });
+            }
+        };
+        
+        // Очистить подразделы при загрузке
+        subsectionSelect.innerHTML = '<option value="">Сначала выберите раздел</option>';
+    }
+}
+
 // Настройка обработчиков форм
 function setupFormHandlers() {
     // Обработчик добавления контента
@@ -922,7 +986,7 @@ function setupFormHandlers() {
             const title = document.getElementById('contentTitle').value;
             const description = document.getElementById('contentDescription').value;
             
-            console.log('Добавление контента:', { sectionId, subsectionId, title, description });
+            console.log('Добавление информации:', { sectionId, subsectionId, title, description });
             
             if (!sectionId || !subsectionId) {
                 alert('Ошибка: не указан раздел или подраздел');
@@ -935,7 +999,7 @@ function setupFormHandlers() {
             }
             
             contentManager.addContent(sectionId, subsectionId, title, description);
-            contentManager.addActivity(`Добавлен контент: ${title}`, '📝');
+            contentManager.addActivity(`Добавлена информация: ${title}`, '📝');
             
             closeModal('addContentModal');
             addContentForm.reset();
@@ -943,7 +1007,7 @@ function setupFormHandlers() {
             // Остаться в текущем разделе
             showContent(sectionId, subsectionId);
             
-            alert('Контент успешно добавлен!');
+            alert('Информация успешно добавлена!');
         });
     }
     
@@ -972,6 +1036,43 @@ function setupFormHandlers() {
             // Остаться в текущем разделе
             showContent(sectionId, subsectionId);
         });
+    }
+    
+    // Обработчик редактирования контента
+    const editContentForm = document.getElementById('editContentForm');
+    if (editContentForm) {
+        editContentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const key = document.getElementById('editContentKey').value;
+            const id = parseInt(document.getElementById('editContentId').value);
+            const title = document.getElementById('editContentTitle').value;
+            const description = document.getElementById('editContentDescription').value;
+            
+            if (!title.trim() || !description.trim()) {
+                alert('Заполните все поля');
+                return;
+            }
+            
+            if (updateContentFromMenu(key, id, title, description)) {
+                alert('Информация успешно обновлена');
+                closeModal('editContentModal');
+                
+                // Перезагрузить текущий раздел
+                const parts = key.split('_');
+                if (parts.length === 2) {
+                    showContent(parts[0], parts[1]);
+                }
+            } else {
+                alert('Ошибка при обновлении информации');
+            }
+        });
+    }
+    
+    // Обработчик предварительного просмотра фото
+    const photoInput = document.getElementById('photoUpload');
+    if (photoInput) {
+        photoInput.addEventListener('change', previewPhotos);
     }
 }
 
@@ -1039,12 +1140,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Настроить обработчики форм
         setupFormHandlers();
-        
-        // Обработчик предварительного просмотра фото
-        const photoInput = document.getElementById('photoUpload');
-        if (photoInput) {
-            photoInput.addEventListener('change', previewPhotos);
-        }
         
         // Слушать обновления разделов
         window.addEventListener('sectionsUpdated', function() {
